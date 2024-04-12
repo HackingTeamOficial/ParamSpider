@@ -71,6 +71,12 @@ Here are a few examples of how to use `paramspider`:
    paramspider -d example.com -p '"><h1>reflection</h1>'
   ```
 
+- Disable updating parameter values with a placeholder:
+
+ ```sh
+   paramspider -d example.com -db
+```
+
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute to `paramspider`, please follow these steps:

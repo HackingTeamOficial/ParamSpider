@@ -55,13 +55,15 @@ def clean_url(url):
 
     return parsed_url.geturl()
 
-def clean_urls(urls, extensions, placeholder):
+def clean_urls(urls, extensions, placeholder, disable_placeholder):
     """
     Clean a list of URLs by removing unnecessary parameters and query strings.
 
     Args:
         urls (list): List of URLs to clean.
         extensions (list): List of file extensions to check against.
+        placeholder (str): Default placeholder for parameter values.
+        disable_placeholder (bool): Flag to indicate whether to update parameter values with the default placeholder.
 
     Returns:
         list: List of cleaned URLs.
@@ -72,13 +74,16 @@ def clean_urls(urls, extensions, placeholder):
         if not has_extension(cleaned_url, extensions):
             parsed_url = urlparse(cleaned_url)
             query_params = parse_qs(parsed_url.query)
-            cleaned_params = {key: placeholder for key in query_params}
+            if not disable_placeholder:
+                cleaned_params = {key: placeholder for key in query_params}
+            else:
+                cleaned_params = query_params
             cleaned_query = urlencode(cleaned_params, doseq=True)
             cleaned_url = parsed_url._replace(query=cleaned_query).geturl()
             cleaned_urls.add(cleaned_url)
     return list(cleaned_urls)
 
-def fetch_and_clean_urls(domain, extensions, stream_output,proxy, placeholder):
+def fetch_and_clean_urls(domain, extensions, stream_output, proxy, placeholder, disable_placeholder):
     """
     Fetch and clean URLs related to a specific domain from the Wayback Machine.
 
@@ -86,18 +91,21 @@ def fetch_and_clean_urls(domain, extensions, stream_output,proxy, placeholder):
         domain (str): The domain name to fetch URLs for.
         extensions (list): List of file extensions to check against.
         stream_output (bool): True to stream URLs to the terminal.
+        proxy (str): Proxy address for web requests.
+        placeholder (str): Default placeholder for parameter values.
+        disable_placeholder (bool): Flag to indicate whether to update parameter values with the default placeholder.
 
     Returns:
         None
     """
     logging.info(f"{Fore.YELLOW}[INFO]{Style.RESET_ALL} Fetching URLs for {Fore.CYAN + domain + Style.RESET_ALL}")
     wayback_uri = f"https://web.archive.org/cdx/search/cdx?url={domain}/*&output=txt&collapse=urlkey&fl=original&page=/"
-    response = client.fetch_url_content(wayback_uri,proxy)
+    response = client.fetch_url_content(wayback_uri, proxy)
     urls = response.text.split()
     
     logging.info(f"{Fore.YELLOW}[INFO]{Style.RESET_ALL} Found {Fore.GREEN + str(len(urls)) + Style.RESET_ALL} URLs for {Fore.CYAN + domain + Style.RESET_ALL}")
     
-    cleaned_urls = clean_urls(urls, extensions, placeholder)
+    cleaned_urls = clean_urls(urls, extensions, placeholder, disable_placeholder)
     logging.info(f"{Fore.YELLOW}[INFO]{Style.RESET_ALL} Cleaning URLs for {Fore.CYAN + domain + Style.RESET_ALL}")
     logging.info(f"{Fore.YELLOW}[INFO]{Style.RESET_ALL} Found {Fore.GREEN + str(len(cleaned_urls)) + Style.RESET_ALL} URLs after cleaning")
     logging.info(f"{Fore.YELLOW}[INFO]{Style.RESET_ALL} Extracting URLs with parameters")
@@ -137,8 +145,9 @@ def main():
     parser.add_argument("-d", "--domain", help="Domain name to fetch related URLs for.")
     parser.add_argument("-l", "--list", help="File containing a list of domain names.")
     parser.add_argument("-s", "--stream", action="store_true", help="Stream URLs on the terminal.")
-    parser.add_argument("--proxy", help="Set the proxy address for web requests.",default=None)
-    parser.add_argument("-p", "--placeholder", help="placeholder for parameter values", default="FUZZ")
+    parser.add_argument("--proxy", help="Set the proxy address for web requests.", default=None)
+    parser.add_argument("-p", "--placeholder", help="Placeholder for parameter values", default="FUZZ")
+    parser.add_argument("-dp", "--disable-placeholder", action="store_true", help="Disable updating parameter values with a placeholder.")
     args = parser.parse_args()
 
     if not args.domain and not args.list:
@@ -146,6 +155,9 @@ def main():
 
     if args.domain and args.list:
         parser.error("Please provide either the -d option or the -l option, not both.")
+
+    if args.placeholder and args.disable_placeholder:
+        parser.error("Please provide either the --placeholder option or the --disable-placeholder option, not both.")
 
     if args.list:
         with open(args.list, "r") as f:
@@ -158,11 +170,11 @@ def main():
     extensions = HARDCODED_EXTENSIONS
 
     if args.domain:
-        fetch_and_clean_urls(domain, extensions, args.stream, args.proxy, args.placeholder)
+        fetch_and_clean_urls(domain, extensions, args.stream, args.proxy, args.placeholder, args.disable_placeholder)
 
     if args.list:
         for domain in domains:
-            fetch_and_clean_urls(domain, extensions, args.stream,args.proxy, args.placeholder)
+            fetch_and_clean_urls(domain, extensions, args.stream, args.proxy, args.placeholder, args.disable_placeholder)
 
 if __name__ == "__main__":
     main()
