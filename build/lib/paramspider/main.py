@@ -132,7 +132,7 @@ def main():
  / .__/\_,_/_/  \_,_/_/_/_/___/ .__/_/\_,_/\__/_/   
 /_/                          /_/                    
 
-                              with <3 by @0xasm0d3us          
+                              with <3 by @0xasm0d3us & @_bormaa_           
     """
     colored_log_text = f"{yellow_color_code}{log_text}{reset_color_code}"
     print(colored_log_text)
@@ -153,7 +153,7 @@ def main():
 
     if args.list:
         with open(args.list, "r") as f:
-            domains = [line.strip().lower().replace('https://', '').replace('http://', '').replace('/', '') for line in f.readlines()]
+            domains = [line.strip().lower().replace('https://', '').replace('http://', '') for line in f.readlines()]
             domains = [domain for domain in domains if domain]  # Remove empty lines
             domains = list(set(domains))  # Remove duplicates
     else:
